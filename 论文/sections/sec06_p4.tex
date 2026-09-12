@@ -1,0 +1,175 @@
+\section{问题4：波动电价下的购电模型}
+
+\subsection{电价特征与预测}
+
+问题4 中电价随时刻波动，且 0:00 决策时当日电价未知，须用历史电价预测，而全部费用按附件4 的实际交易时刻电价结算。附件4 的主要特征（\cref{fig:p4-price}）为：全年电价在 $0.0076$--$1.7936$ 元/kWh 之间波动，均值 $0.7662$ 元/kWh，与附件1 的均值相同；日内极差平均 $1.1073$ 元/kWh、最大 $1.4995$ 元/kWh，远大于固定电价的日内极差（约 $1.02$ 元/kWh）；同一时刻的跨日标准差为 $0.1238$ 元/kWh，说明\textbf{日周期形状稳定、水平逐日波动}；电价与负载的相关系数为 $0.508$，而与光伏仅 $0.028$，说明电价主要由负荷驱动，不受光伏直接决定。
+
+\begin{table}[H]
+  \centering
+  \caption{电价预测器的滚动评价（2025-02-01 至 12-31，单位：元/kWh）}
+  \label{tab:p4-pred}
+  \small
+  \begin{tabular}{lccc}
+    \toprule[1.5pt]
+    预测器 & MAE & RMSE & 平均偏差 \\
+    \midrule[1pt]
+    昨日持续     & 0.0843 & 0.1238 & $+0.0006$ \\
+    3 日滑动平均  & 0.1022 & 0.1320 & $+0.0006$ \\
+    \textbf{7 日滑动平均} & \textbf{0.0827} & \textbf{0.1053} & $+0.0003$ \\
+    14 日滑动平均 & 0.0838 & 0.1074 & $+0.0004$ \\
+    30 日滑动平均 & 0.0875 & 0.1135 & $+0.0003$ \\
+    EWMA(0.7,14) & 0.0895 & 0.1154 & $+0.0005$ \\
+    EWMA(0.5,7)  & 0.0891 & 0.1194 & $+0.0006$ \\
+    同月历史均值  & 0.0862 & 0.1112 & $-0.0009$ \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+\cref{fig:p4-forecast} 给出各预测器精度与典型日对比。由 \cref{tab:p4-pred}，\textbf{7 日滑动平均}在 MAE 与 RMSE 两个指标上均最优（$0.0827$、$0.1053$ 元/kWh），且平均偏差近似为零，故取为电价预测器；其相对误差约为 $11\%$，明显小于负载预测的相对误差（$781/4626\approx17\%$）。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig14.png}
+  \caption{问题4 的电价预测：(a) 各预测器的 MAE 对比；(b) 2025-06-21 的实际电价与两种预测曲线}
+  \label{fig:p4-forecast}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig16.png}
+  \caption{问题4 的电价统计特征：(a) 电价与负载的散点关系；(b) 电价与光伏的散点关系；(c) 电价月度箱线图}
+  \label{fig:p4-price}
+\end{figure}
+
+\subsection{模型建立}
+
+\textbf{（1）主模型：电价预测 $+$ 滚动重优化，按实际电价结算。} 计划阶段用预测电价 $\hat p_t$ 构造目标函数，结算阶段用实际电价 $p_t^{\text{act}}$。问题4-2（对应问题2）的计划子问题为
+
+\begin{equation}
+  \min_{\{g_t,a_t,b_t,s_t,E_t\}}\sum_{t=1}^{T}\hat p_tg_t
+  \quad\text{s.t.}\quad
+  \begin{cases}
+    g_t+\eta_db_t+(1-\beta)\hat P_t\Delta t=(1+\alpha)\hat L_t\Delta t+\dfrac{a_t}{\eta_c}+s_t,\\
+    E_t=E_{t-1}+a_t-b_t,\quad1200\le E_t\le10800,\quad E_{144}=E_0,\\
+    0\le a_t,b_t\le833.33,\quad g_t\ge0,\quad s_t\ge0,
+  \end{cases}\text{。}
+  \label{eq:p4-2}
+\end{equation}
+
+结算费用为 $F_{4\text{-}2}=\sum_t p_t^{\text{act}}g_t+\sum_t5p_t^{\text{act}}e_t$，其中 $e_t=(L_t\Delta t-g_t-\eta_db_t-P_t\Delta t)^{+}$。问题4-3（对应问题3）在 \cref{eq:p4-2} 的基础上叠加 \cref{eq:p3-stage} 的滚动调整，违约费与紧急费均按实际电价计算：
+
+\begin{equation}
+  F_{4\text{-}3}=\sum_{t}p_t^{\text{act}}\tilde g_t
+  +0.5\sum_{t}p_t^{\text{act}}\big|\tilde g_t-\hat g_t\big|
+  +\sum_{t}5p_t^{\text{act}}e_t .
+  \label{eq:p4-3}
+\end{equation}
+
+\textbf{（2）含价格情景的随机规划。} 用月度分块自助法或"形状 $\times$ 水平 $\times$ 扰动"方式生成价格情景 $\{(\pi_s,p^{s}_t)\}$，目标改为
+
+\begin{equation}
+  \min\ \sum_{s}\pi_s\Big[\sum_tp^{s}_t\tilde g^{s}_t+0.5\sum_tp^{s}_t|\tilde g^{s}_t-\hat g_t|+\sum_t5p^{s}_t e^{s}_t\Big],
+  \label{eq:p4-sp}
+\end{equation}
+
+并对 0:00 决策施加非预期性约束（$\hat g_t$ 不依赖情景）。式 \eqref{eq:p4-sp} 给出价格不确定性的期望最优参照。
+
+\textbf{（3）鲁棒模型。} 取价格不确定集 $p_t\in[p^{L}_t,p^{U}_t]$。由于 \cref{eq:p4-3} 中每一项都关于 $p_t$ 单调递增（$p_t\tilde g_t$、$0.5p_t|\Delta_t|$、$5p_t e_t$，各量非负），最坏情形在\textbf{所有时段同时取价格上界}处达到：
+
+\begin{equation}
+  \max_{p\in\mathcal U}F_{4\text{-}3}=F_{4\text{-}3}\big|_{p_t=p^{U}_t},
+  \label{eq:p4-robust}
+\end{equation}
+
+即鲁棒对应模型等价于"把电价预测替换为上界"的确定性线性规划。若改用预算不确定集（至多 $\Gamma$ 个时段取上界），可在点预测与全时段最坏之间连续调节保守程度。
+
+\subsection{价格与需求正相关下计划分位点的移动}
+
+附件4 显示电价与负载正相关（$r=0.508$），即高需求时段往往同时是高电价时段，缺电的紧急代价被价格放大。设电价 $P$ 与需求 $D$ 随机且 $\mathbb{E}[P\mid D]$ 随 $D$ 递增，计划 $q$ 的相关费用为
+
+\begin{equation}
+  G(q)=\mathbb{E}\Big[0.5\,P\,|D-q|\Big]
+  =0.5\,\mathbb{E}_D\Big[\underbrace{\mathbb{E}[P\mid D]}_{w(D)\uparrow}\,|D-q|\Big],
+  \label{eq:p4-weighted}
+\end{equation}
+
+令 $\mathrm{d}G/\mathrm{d}q=0$ 得
+
+\begin{equation}
+  \int_{D>q}w(D)\,\mathrm{d}F(D)=\int_{D<q}w(D)\,\mathrm{d}F(D).
+  \label{eq:p4-foc}
+\end{equation}
+
+由于权重 $w(D)$ 在 $D$ 较大的一侧更大，\cref{eq:p4-foc} 成立要求 $\Pr(D>q^\star)<\Pr(D<q^\star)$，即
+
+\begin{equation}
+  q^\star>\mathrm{median}(D).
+  \label{eq:p4-qstar}
+\end{equation}
+
+\textbf{命题4}：当电价与需求正相关时，问题3 中"计划分位点等于中位数"的结论被修正为"计划分位点高于中位数"，且上移幅度随相关性增强而增大。该结论与鲁棒模型 \cref{eq:p4-robust} 的方向一致（对价格取上界等价于提高缺电的边际代价，从而要求更保守的计划）。
+
+\subsection{求解结果与对比}
+
+\cref{tab:p4-summary} 与 \cref{fig:p4-month}、\cref{fig:p4-pol} 给出波动电价下的重算结果。
+
+\begin{table}[H]
+  \centering
+  \caption{波动电价下重算问题2 与问题3 的全年费用对比（334 天，单位：元）}
+  \label{tab:p4-summary}
+  \small
+  \footnotesize\begin{tabular}{lrrr}
+    \toprule[1.5pt]
+    模型 & 固定电价（问题2/3） & 波动电价（问题4） & 变化 \\
+    \midrule[1pt]
+    问题2 及其重算（预测$+$裕度，按实际电价结算） & 16647984.89 & 20345866.93 & $+22.2\%$ \\
+    问题3 及其重算（题目方案 P3）                 & 21369474.67 & 22244432.98 & $+4.1\%$ \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+\textbf{（1）问题4-2 的结果。} 在 1 月数据上按实际电价结算标定得 $\alpha=0.05$、$\beta=0$（较问题2 的 $\alpha=0.15$ 明显减小，原因是波动电价下计划购电本身的成本权重上升、且电价预测误差成为新的不确定性来源）；全年计划购电费 $13752204.93$ 元、紧急购电费 $6593662.00$ 元，\textbf{总费用 $20345866.93$ 元}；紧急购电量 $1391491.14$ \si{kWh}，占负载电量的 $3.76\%$（显著高于问题2 的 $0.746\%$），出现紧急购电 293 天。相较无裕度计划（$20952588.33$ 元）节省 $606721.39$ 元（\textbf{$2.90\%$}）——裕度收益远低于问题2 的 $22.97\%$，因为波动电价下紧急购电的绝对价格更高，仅靠小幅提高计划的覆盖分位难以抵消价格尖峰的影响。
+
+\textbf{（2）问题4-3 的结果。} 裕度标定为 $\alpha=0.10$。各策略总费用为：P0 $22071537.66$ 元、P1 $22288981.75$ 元、P2 $22244432.90$ 元、P3 $22244432.98$ 元；完美光伏信息边界 $21499371.67$ 元，完美信息边界 $15386169.15$ 元。与问题3 的结论一致，\textbf{预报更新仍无正收益}（P3 较 P0 高 $0.78\%$），且波动电价下"仅完美光伏信息"的价值（$74.51$ 万元，以 P3 为基准）仍远低于完美信息的价值（$685.83$ 万元），再次说明负载侧信息是主要瓶颈。
+
+\begin{table}[H]
+  \centering
+  \caption{波动电价下的月度费用与紧急购电量}
+  \label{tab:p4-month}
+  \small
+  \footnotesize\begin{tabular}{ccrrr}
+    \toprule[1.5pt]
+    月份 & 月均电价 (元/kWh) & 问题4-2 总费用 (万元) & 问题4-3 总费用 (万元) & 问题4-3 紧急量 (\si{kWh}) \\
+    \midrule[1pt]
+    2  & 0.7696 & 186.17 & 202.24 & 126449.79 \\
+    3  & 0.7255 & 170.46 & 187.28 & 144613.85 \\
+    4  & 0.6988 & 134.51 & 151.70 & 110969.71 \\
+    5  & 0.6912 & 135.04 & 151.91 & 104277.40 \\
+    6  & 0.7663 & 200.40 & 211.20 & 138265.18 \\
+    7  & 0.8301 & 222.71 & 238.69 & 112445.89 \\
+    8  & 0.7865 & 201.01 & 216.88 & 123089.24 \\
+    9  & 0.7203 & 156.36 & 175.27 & 112976.19 \\
+    10 & 0.7203 & 161.97 & 182.97 & 122092.78 \\
+    11 & 0.7610 & 203.25 & 221.24 & 158994.07 \\
+    12 & 0.8617 & 262.70 & 285.06 & 146388.61 \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig15.png}
+  \caption{波动电价下的月度特征：(a) 月均电价与紧急购电量；(b) 问题4-2 与问题4-3 的月度总费用}
+  \label{fig:p4-month}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig17.png}
+  \caption{问题4：(a) 固定电价与波动电价下的全年总费用对比；(b) 波动电价下各更新策略的费用}
+  \label{fig:p4-pol}
+\end{figure}
+
+由 \cref{tab:p4-month}，波动电价下 12 月费用最高（问题4-2 为 $262.70$ 万元、问题4-3 为 $285.06$ 万元），与固定电价情形一致；但各月费用的离散程度更大，且 7 月（月均电价 $0.8301$ 元/kWh，为夏季最高）的费用跃升至第二位，说明\textbf{波动电价把"月份电价水平"与"缺口大小"两个因素解耦}，夏季高温高负荷与价格高峰叠加的风险上升。
+
+综合四问结果可以看到一条清晰的规律：\textbf{信息条件的改善并不自动带来费用的下降}，其效果取决于"改善的信息能否覆盖主要误差来源"以及"调整机制的费率结构"。问题1 的信息条件是完美的，费用最低（按典型日计 $35101.57$ 元）；问题2 引入负载与光伏预测后信息缺口带来 $36.1\%$ 的额外费用；问题3 的预报更新因费率结构而未能收回成本；问题4 进一步引入电价不确定性，使费用在问题2、3 基础上分别上升 $22.2\%$ 与 $4.1\%$。

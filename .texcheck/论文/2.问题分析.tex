@@ -1,0 +1,36 @@
+% ===== 问题分析 =====
+\section{问题分析}
+
+\subsection{总体思路}
+% 分析各问题之间的递进关系。
+% 问题1是基础——建立XX模型；问题2在问题1基础上扩展YY；问题3综合前两问结果做ZZ。
+
+% ===== 9框 TikZ 流程图（只替换 {} 中文字，每框 ≤ 7 字，其余代码一字不改） =====
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[x=1cm, y=0.7cm]
+    \node[box] (n11) at (0, 0) {步骤1};
+    \node[box] (n12) at (5, 0) {步骤2};
+    \node[box] (n13) at (10, 0) {步骤3};
+    \node[box] (n21) at (0, -3) {步骤4};
+    \node[box] (n22) at (5, -3) {步骤5};
+    \node[box] (n23) at (10, -3) {步骤6};
+    \node[box] (n31) at (0, -6) {步骤7};
+    \node[box] (n32) at (5, -6) {步骤8};
+    \node[box] (n33) at (10, -6) {步骤9};
+    \draw[arrow] (n11) -- (n12); \draw[arrow] (n12) -- (n13);
+    \draw[arrow] (n21) -- (n22); \draw[arrow] (n22) -- (n23);
+    \draw[arrow] (n31) -- (n32); \draw[arrow] (n32) -- (n33);
+    \draw[arrow] (n11) -- (n21); \draw[arrow] (n12) -- (n22); \draw[arrow] (n13) -- (n23);
+    \draw[arrow] (n21) -- (n31); \draw[arrow] (n22) -- (n32); \draw[arrow] (n23) -- (n33);
+  \end{tikzpicture}
+  \caption{总体建模流程图}
+  \label{fig:flowchart}
+\end{figure}
+
+% ==== 逐问题分析 ====
+\subsection{问题1分析}
+% 问题类型判断（优化/预测/评价/分类/机理）→ 可用方法列举 → 选择理由 → 拟用模型
+% 写法模板：问题1本质上是【类型】问题，其核心在于【关键难点】。
+% 常用方法包括【方法A】（优缺点）、【方法B】（优缺点）。
+% 考虑到【题目约束/数据特征】，本文选择【方法C】，理由是【理由①②③】。

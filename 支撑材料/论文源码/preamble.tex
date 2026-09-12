@@ -1,0 +1,68 @@
+% =====================================================================
+%  共享前言（电子版与打印版共用）
+%  版式依据《全国大学生数学建模竞赛论文格式规范（2026年修订稿）》
+% =====================================================================
+\documentclass[12pt,a4paper]{ctexart}
+
+\usepackage[a4paper,top=2.6cm,bottom=2.6cm,left=2.6cm,right=2.6cm]{geometry}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs,multirow,array,tabularx,makecell}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[font=small,labelsep=quad]{caption}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[colorlinks,linkcolor=black,citecolor=black,urlcolor=blue!60!black,
+            bookmarksnumbered]{hyperref}
+\usepackage{cleveref}
+\usepackage[superscript]{cite}   % 正文引用采用上标角标（GB/T 7714 顺序编码制）
+\renewcommand\citeform[1]{[#1]}  % 上标角标保留方括号：[1]、[1,2]、[1-3]
+\usepackage{fontspec}
+\setmonofont{Consolas}[Scale=0.90]   % 代码清单需覆盖希腊字母
+
+% ---------------- 中文与标题格式 ----------------
+\ctexset{
+  section  = {format = \heiti\zihao{4}, name = {,、}, number = \chinese{section},
+              aftername = {}, beforeskip = 14pt plus 2pt minus 2pt, afterskip = 8pt},
+  subsection = {format = \heiti\zihao{-4}, aftername = {},
+                beforeskip = 10pt plus 2pt minus 2pt, afterskip = 6pt},
+  subsubsection = {format = \heiti\zihao{-4}, aftername = {},
+                   beforeskip = 8pt, afterskip = 4pt}
+}
+\linespread{1.10}
+\setlength{\parindent}{2em}
+% 压缩浮动体与公式间距，确保正文不超过 30 页（规范第四条）
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}
+\setlength{\abovedisplayshortskip}{4pt plus 2pt minus 2pt}
+\setlength{\belowdisplayshortskip}{4pt plus 2pt minus 2pt}
+\crefname{figure}{图}{图}
+\crefname{table}{表}{表}
+\crefname{equation}{式}{式}
+\crefname{appendix}{附录}{附录}
+\crefformat{equation}{式(#2#1#3)}
+
+% ---------------- 列表与代码 ----------------
+\lstset{
+  basicstyle = \ttfamily\footnotesize,
+  numbers = left, numberstyle = \tiny, numbersep = 6pt,
+  frame = single, framexleftmargin = 4pt,
+  breaklines = true, breakatwhitespace = false,
+  showstringspaces = false, extendedchars = false, tabsize = 4,
+  keywordstyle = \color{blue!70!black}, commentstyle = \color{green!45!black},
+  stringstyle = \color{red!60!black}, columns = flexible,
+  captionpos = t
+}
+\graphicspath{{图/}}
+
+% ---------------- 前置页（打印版专用）常用命令 ----------------
+\newcommand{\fillline}[1]{\underline{\hspace{#1}}}

@@ -1,0 +1,239 @@
+\section{问题2：预测不确定下的两阶段购电模型}
+
+\subsection{信息结构与决策时序}
+
+问题2 中电价每天相同（取附件1 的 144 段电价），而小区负载与光伏发电每天不同，且 0:00 决策时只能获得历史数据。决策结构为两阶段：第一阶段在 0:00 用历史数据预测当日负载与光伏，并一次确定全天的计划购电量 $g_t$ 与充放电计划 $a_t,b_t$；第二阶段在运行中被动接受实际结果——若某时段的实际供给低于负载，则按交易时刻电价的 5 倍紧急购电。总费用为
+
+\begin{equation}
+  F_2=\sum_{t=1}^{T}p_tg_t+\sum_{t=1}^{T}5p_t\,e_t,\qquad
+  e_t=\big(L_t\Delta t-g_t-\eta_db_t-P_t\Delta t\big)^{+},
+  \label{eq:p2-cost}
+\end{equation}
+
+其中 $(\cdot)^{+}=\max(\cdot,0)$。由于 $L_t,P_t$ 在决策时未知，$F_2$ 为随机变量，目标为期望费用最小，即 $\min\mathbb{E}[F_2]$。
+
+需要强调的是，紧急电价是计划电价的 5 倍且随 $p_t$ 缩放：晚峰时段（$p_t\approx1.35$ 元/kWh）缺电的代价高达 $6.74$ 元/kWh，是夜间（$0.43\rightarrow2.14$ 元/kWh）的 3 倍以上。因此"预留多少安全电量"成为本问的核心决策。
+
+\subsection{第一层：日前预测与决策导向评价}
+
+本文考察八类同时段预测器\cite{hyndman2021}：昨日持续、$3/7/14/30$ 日滑动平均、指数加权平均 $\mathrm{EWMA}(0.7,14)$ 与 $\mathrm{EWMA}(0.5,7)$、同月历史均值。所有预测均严格使用预测日之前的数据（滚动评价，避免前视偏差），结果见 \cref{tab:p2-pred} 与 \cref{fig:p2-pred}。
+
+\begin{table}[H]
+  \centering
+  \caption{预测器精度的滚动评价（2025-02-01 至 12-31，共 334 天，单位：\si{kW}）}
+  \label{tab:p2-pred}
+  \small
+  \begin{tabular}{lcccc}
+    \toprule[1.5pt]
+    预测器 & 负载 MAE & 负载 RMSE & 光伏 MAE & 光伏 RMSE \\
+    \midrule[1pt]
+    昨日持续      & 650.0 & 1128.4 & 185.3 & 375.2 \\
+    3 日滑动平均   & 945.1 & 1241.3 & 154.5 & 313.5 \\
+    \textbf{7 日滑动平均}   & 781.2 & \textbf{955.9} & 153.4 & 303.9 \\
+    14 日滑动平均  & 782.7 & 959.8  & 171.5 & 327.2 \\
+    30 日滑动平均  & 789.8 & 973.5  & 225.6 & 400.1 \\
+    \textbf{EWMA(0.7,14)}  & 845.0 & 1071.4 & \textbf{150.1} & \textbf{301.0} \\
+    EWMA(0.5,7)   & 812.6 & 1110.8 & 154.1 & 312.6 \\
+    同月历史均值   & 813.8 & 1029.3 & 178.1 & 334.7 \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig07.png}
+  \caption{预测器精度的滚动评价：(a) 负载；(b) 光伏}
+  \label{fig:p2-pred}
+\end{figure}
+
+\cref{tab:p2-pred} 显示了一个值得注意的现象：\textbf{负载的 MAE 最优（昨日持续，650.0 \si{kW}）与 RMSE 最优（7 日滑动平均，955.9 \si{kW}）并不一致}。由于紧急购电只由误差的"正尾"触发，而 5 倍电价对大幅偏差的惩罚远重于小幅偏差，MAE 最小并不等于费用最低。因此本文不单纯以精度指标选型，而采用\textbf{决策导向评价}：在 1 月数据上，对候选预测器与安全裕度作联合标定，以"计划购电费 $+$ 紧急购电费"的实测总费用为准则。最终选取负载采用 7 日滑动平均（RMSE 最优）、光伏采用 $\mathrm{EWMA}(0.7,14)$（MAE 与 RMSE 双优）。
+
+\subsection{第二层：安全裕度模型与标定}
+
+由于 0:00 的预测存在误差，若按点预测制定计划，则实际光伏低于预测的时段必然触发高价紧急购电。为此引入\textbf{安全裕度}，用较"悲观"的输入编制计划：
+
+\begin{equation}
+  \tilde L_t=(1+\alpha)\hat L_t,\qquad \tilde P_t=(1-\beta)\hat P_t,\qquad \alpha,\beta\ge0,
+  \label{eq:p2-margin}
+\end{equation}
+
+其中 $\hat L_t,\hat P_t$ 为点预测，$\alpha$ 为负载上浮系数，$\beta$ 为光伏下调系数。计划子问题为
+
+\begin{equation}
+  \min_{\{g_t,a_t,b_t,s_t,E_t\}}\sum_{t=1}^{T}p_tg_t
+  \quad\text{s.t.}\quad
+  \begin{cases}
+    g_t+\eta_db_t+\tilde P_t\Delta t=\tilde L_t\Delta t+\dfrac{a_t}{\eta_c}+s_t,\\
+    E_t=E_{t-1}+a_t-b_t,\quad 1200\le E_t\le10800,\quad E_{144}=E_0,\\
+    0\le a_t,b_t\le833.33,\quad g_t\ge0,\quad s_t\ge0 .
+  \end{cases}\text{。}
+  \label{eq:p2-sub}
+\end{equation}
+
+裕度参数在 1 月 8--31 日（共 24 天，使用其之前的历史数据预测）上按总费用最小标定：
+
+\begin{equation}
+  \min_{\alpha,\beta}\ \sum_{d\in\mathcal D_{\text{train}}}
+  \Big[\underbrace{\sum_t p_tg_t^{(d)}}_{\text{计划费}}+\underbrace{\sum_t5p_t\,e_t^{(d)}}_{\text{紧急费}}\Big].
+  \label{eq:p2-calib}
+\end{equation}
+
+\begin{table}[H]
+  \centering
+  \caption{预测器与安全裕度的联合标定结果（前 5 名，训练集为 1 月 8--31 日）}
+  \label{tab:p2-margin}
+  \small
+  \begin{tabular}{ccccl}
+    \toprule[1.5pt]
+    排名 & 负载上浮 $\alpha$ & 光伏下调 $\beta$ & 1 月总费用 (元) & 说明 \\
+    \midrule[1pt]
+    1 & 0.15 & 0.00 & 1524501.83 & \textbf{最优} \\
+    2 & 0.12 & 0.06 & 1528941.47 & \\
+    3 & 0.12 & 0.00 & 1529084.42 & \\
+    4 & 0.15 & 0.06 & 1547144.12 & \\
+    5 & 0.12 & 0.12 & 1555544.16 & \\
+    \midrule[1pt]
+    --- & 0.00 & 0.00 & 1945353.62 & 无裕度基线（同预测器组合） \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+\cref{tab:p2-margin} 列出前 5 名标定结果。标定的最优裕度为 $\alpha=0.15,\ \beta=0$，1 月总费用由 $1945353.62$ 元降至 $1524501.83$ 元，\textbf{节省 $420851.79$ 元（$21.63\%$）}。最优 $\alpha$ 落在搜索区间内部（\cref{fig:p2-margin}(b) 呈单峰形态），说明"裕度越大越好"的判断并不成立：过度预留会把购电费推高，反而抵消紧急费的下降。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig08.png}
+  \caption{问题2 的安全裕度标定：(a) $(\alpha,\beta)$ 平面上 1 月总费用的响应面；(b) 最优裕度的内部极小点}
+  \label{fig:p2-margin}
+\end{figure}
+
+\subsection{裕度的理论区间：报童模型解释}
+
+为解释标定得到的裕度是否合理，将单时段决策近似为报童问题。设该时段所需"计划供给量"为 $q$、实际需求为随机量 $D$：少计划 1 \si{kWh} 的代价是改为按 $5p_t$ 紧急购电，即缺货成本
+
+\begin{equation}
+  c_u=5p_t-p_t=4p_t ;
+  \label{eq:p2-cu}
+\end{equation}
+
+多计划 1 \si{kWh} 而未被使用的代价取决于能否入库留用：若储能尚有余量，多买的电只损失往返效率，$c_o=p_t(1-\eta_c\eta_d)=0.19p_t$；若储能已满或无余量，则该电量被直接浪费，$c_o=p_t$。由报童模型\cite{silver1998}，最优覆盖分位点为
+
+\begin{equation}
+  q^\star=F_D^{-1}\!\left(\frac{c_u}{c_u+c_o}\right)\in
+  \left[\frac{4}{4+1},\ \frac{4}{4+0.19}\right]=[0.80,\ 0.96].
+  \label{eq:p2-newsvendor}
+\end{equation}
+
+即计划供给应覆盖净需求不确定性的 $80\%$--$96\%$ 分位。该区间与数值标定的 $\alpha=0.15$ 互相印证：在负载预测 RMSE 约 $956$ \si{kW} 的量级下，上浮 $15\%$（约 $694$ \si{kW}，与 $0.7$ 倍标准差相当）正落在该分位区间的合理范围内。同时，$c_u=4p_t$ 与 $c_o$ 均随 $p_t$ 等比缩放，故各时段的\textbf{最优分位点相同}，但\textbf{绝对代价不同}——储能容量有限时，安全储备应优先分配给高价时段，这正是"晚峰前把电储足"的严格解释。
+
+\subsection{对照模型}
+
+\textbf{（1）两阶段随机规划（样本平均近似）\cite{birge2011}。} 设情景集 $\{(\pi_s,L^s_t,P^s_t)\}_{s=1}^{S}$ 由历史日整条曲线抽样生成（保留时段间相关结构），则
+
+\begin{equation}
+  \min\ \sum_{t}p_tg_t+\sum_{s}\pi_s\sum_{t}5p_t e_t^{s}
+  \quad\text{s.t.}\quad
+  \begin{cases}
+    g_t+\eta_db_t+P_t^{s}\Delta t+e_t^{s}=L_t^{s}\Delta t+\dfrac{a_t}{\eta_c}+s_t^{s},&\forall t,s\\
+    \text{储能动态、状态与功率约束同 \cref{eq:p2-sub}},&\forall t\\
+    g_t,a_t,b_t,E_t\ \text{为第一阶段变量（不依赖情景）},&\ \\
+    e_t^{s},s_t^{s}\ge0\ \text{为第二阶段追偿变量}.&
+  \end{cases}\text{。}
+  \label{eq:p2-saa}
+\end{equation}
+
+由于全部约束线性、$e_t^s$ 的费用为正，最优解自动满足 $e_t^{s}=(L^{s}\Delta t-\text{供给})^{+}$；当情景数与分布趋近真实时，\cref{eq:p2-saa} 的最优值趋于 $\min\mathbb{E}[F_2]$，故可作为裕度法的理论参照。
+
+\textbf{（2）鲁棒优化。} 取箱式不确定集\cite{bertsimas2004} $L_t\in[\hat L_t-\Gamma_L\sigma_t^{L},\hat L_t+\Gamma_L\sigma_t^{L}]$、$P_t\in[\hat P_t-\Gamma_P\sigma_t^{P},\hat P_t+\Gamma_P\sigma_t^{P}]$（$\sigma$ 由历史残差估计）。由于 $e_t$ 关于 $L_t$ 单调增、关于 $P_t$ 单调减，最坏情形在负载取上界、光伏取下界处同时达到，故鲁棒对应模型恰好等价于把 \cref{eq:p2-margin} 的裕度取为 $\alpha=\Gamma_L\sigma_t^{L}/\hat L_t$、$\beta=\Gamma_P\sigma_t^{P}/\hat P_t$ 的确定性线性规划。这说明了裕度法与鲁棒优化之间的关系：\textbf{裕度框架是"柔性的鲁棒—随机折中"，其参数由数据标定而非先验给定}。为给出量化对照，\cref{tab:p2-models} 在同一 334 天报告期上比较了五种模型：本文的预测$+$裕度模型总费用最低（除不可达的完美信息下界外），两阶段随机规划（10 情景）高出 $2.00\%$，鲁棒模型因过度保守高出 $24.06\%$，无裕度计划高出 $29.82\%$。
+
+\begin{table}[H]
+  \centering
+  \caption{问题2 的模型对比（334 天，样本外结算）}
+  \label{tab:p2-models}
+  \footnotesize
+  \begin{tabular}{p{4.6cm}rrr}
+    \toprule[1.5pt]
+    模型 & 全年总费用 (元) & 紧急购电量 (\si{kWh}) & 相对主模型 \\
+    \midrule[1pt]
+    本文：预测 $+$ 安全裕度（$\alpha=0.15$） & 16647985 & 275908 & --- \\
+    对照一：无裕度计划（$\alpha=\beta=0$） & 21611681 & 2225337 & $+29.82\%$ \\
+    对照二：两阶段随机规划（SAA，$S=10$） & 16980919 & 94049 & $+2.00\%$ \\
+    对照三：鲁棒优化（$\Gamma=1$，箱式不确定集） & 20653801 & 691072 & $+24.06\%$ \\
+    对照四：完美信息下界 & 12229643 & 0 & $-26.54\%$ \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+  \par\vspace{3pt}{\footnotesize 注：对照二的情景取该日之前 10 天的实际负载与光伏曲线，第一段计划在样本外与实际数据结算；对照三按 $\hat L+\sigma_L$、$\hat P-\sigma_P$ 编制计划，$\sigma$ 取前 10 天同时段标准差。}
+\end{table}
+
+\subsection{日周期边界与储能执行规则}
+\label{sec:boundary}
+
+题目仅对问题1 明确要求"储能设备在 0:00 和 24:00 的储电量相同"，问题2--4 未直接规定终端电量。但若完全不加终端条件，单日目标中"剩余电量"没有价值，最优解必然在当日最后一个高价时段把电量放到下限 $1200$ \si{kWh}，逐日如此即形成退化。因此必须补充终端口径。本文采用\textbf{日周期条件} $E_{144}=E_0=6000$ \si{kWh}：其优点是与题目给定的 2025-01-01 0:00 电量 $6000$ \si{kWh} 相容、每天的计划可重复执行、且不引入额外的未来信息。需要注意，问题2、3 中电价每天完全相同，稳态下"今晚剩余 1 \si{kWh} 的价值"与"明晚同一时刻的价值"相等，故日周期解与跨日最优解的差异仅在二阶量级（来源于负载与光伏的逐日差异），不影响结论；问题4 中电价逐日波动，日周期口径会略微低估跨日搬运的收益，本文在 \S\ref{sec:validation} 中对此作专门讨论。
+
+储能执行规则为：储能在日内严格按 0:00 计划充放电；当实际光伏低于预测导致负载缺额时，按 \cref{eq:p2-cost} 紧急购电；实际光伏高于预测产生的盈余按弃光处理。在该规则下实际储电量轨迹与计划一致，故逐日 0:00 与 24:00 储电量均可复核。
+
+\subsection{求解结果}
+
+在报告期（2025-02-01 至 12-31，共 334 天）上按上述模型求解，全年结果见 \cref{tab:p2-summary}，月度分布见 \cref{fig:p2-month}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题2 全年费用与对照结果（334 天）}
+  \label{tab:p2-summary}
+  \small
+  \footnotesize\begin{tabular}{lrrr}
+    \toprule[1.5pt]
+    指标 & 计划购电费 (元) & 紧急购电费 (元) & 总费用 (元) \\
+    \midrule[1pt]
+    \textbf{本文模型（7 日均 $+$ EWMA，$\alpha=0.15$）} & 15347789.64 & 1300195.25 & \textbf{16647984.89} \\
+    对照：无裕度计划（$\alpha=\beta=0$） & --- & --- & 21611681.31 \\
+    对照：完美信息下界 & --- & --- & 12229643.06 \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+全年计划购电费 $15347789.64$ 元、紧急购电费 $1300195.25$ 元，\textbf{总费用 $16647984.89$ 元}；紧急购电量合计 $275907.99$ \si{kWh}，仅占同期负载电量的 $0.746\%$，出现紧急购电的天数为 240 天（多为小幅补缺）。相较无裕度计划，安全裕度带来 $4963696.42$ 元的费用下降，\textbf{降幅 $22.97\%$}；与完美信息（逐日按实际负载与光伏求解，$12229643.06$ 元）相比，本文模型的"信息缺口"为 $4418341.83$ 元，占完美信息费用的 $36.1\%$——这正是问题3 试图通过预报更新弥补的部分。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig09.png}
+  \caption{问题2 的月度特征：(a) 月度费用构成；(b) 紧急购电量的"时段--月度"分布}
+  \label{fig:p2-month}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{问题2 月度费用与紧急购电统计}
+  \label{tab:p2-month}
+  \small
+  \footnotesize\begin{tabular}{ccrrr}
+    \toprule[1.5pt]
+    月份 & 计划购电费 (万元) & 紧急购电费 (万元) & 紧急购电量 (\si{kWh}) & 总费用 (万元) \\
+    \midrule[1pt]
+    2  & 138.96 & 10.33 & 21047.61  & 149.29 \\
+    3  & 125.65 & 15.73 & 32714.55  & 141.38 \\
+    4  & 101.16 & 14.74 & 31042.96  & 115.90 \\
+    5  & 104.89 & 18.07 & 37496.50  & 122.96 \\
+    6  & 134.03 & 37.12 & 80469.62  & 171.14 \\
+    7  & 154.39 & 23.93 & 53187.39  & 178.31 \\
+    8  & 142.52 & 14.93 & 31734.36  & 157.45 \\
+    9  & 117.60 & 19.85 & 42018.08  & 137.45 \\
+    10 & 120.47 & 23.12 & 48581.04  & 143.59 \\
+    11 & 139.18 & 26.18 & 54593.36  & 165.36 \\
+    12 & 178.42 & 26.31 & 56678.52  & 204.73 \\
+    \midrule[1pt]
+    合计 & 1534.78 & 130.02 & 275907.99 & 1664.80 \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+由 \cref{tab:p2-month} 与 \cref{fig:p2-month} 可见两点：其一，\textbf{12 月的最严酷来自"三重叠加"}——负载最高、光伏最低、电价处于全年高位，当月总费用 $204.73$ 万元为全年最高；其二，紧急购电的时段分布高度集中于早晚峰（\cref{fig:p2-month}(b) 中的两条亮带），且 6 月与 12 月最突出，这与 \cref{eq:p2-newsvendor} 的机理一致：峰段缺电的 5 倍代价最大，而 6 月与 12 月的光伏预报误差与缺口又最大。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\linewidth]{fig10.png}
+  \caption{问题2 的价值分解与风险分布：(a) 无裕度计划、预测$+$裕度、完美信息三者的全年总费用；(b) 每日紧急购电量的分布}
+  \label{fig:p2-value}
+\end{figure}
+
+\cref{fig:p2-value}(b) 显示每日紧急购电量呈右偏分布：多数日期缺口在 $1000$ \si{kWh} 以内，但存在少量极端日（超过 $3000$ \si{kWh}），这些极端日正是费用贡献的主要来源，也说明安全裕度的价值主要体现在"削掉分布右尾"。

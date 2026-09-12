@@ -1,0 +1,31 @@
+% !TeX program = xelatex
+% =====================================================================
+%  CUMCM 2026 C题 论文（电子版，提交用）
+%  依据《全国大学生数学建模竞赛论文格式规范（2026年修订稿）》：
+%   第一条 A4、页边距 ≥2.5cm；第十条 电子版第一页必须为摘要专用页，
+%   承诺书与编号专用页不得出现在电子版中；第三条 页码自摘要页起页脚居中；
+%   第四条 不要目录、正文不超过 30 页、附录不限页数。
+%  打印版见 论文_打印版.tex（在摘要页前加入承诺书与编号专用页）。
+% =====================================================================
+\input{preamble}
+
+\begin{document}
+
+% ======================= 摘要专用页（电子版第 1 页，页码 1） =======================
+\input{front/abstract}
+
+\clearpage
+% ============================ 正文 ============================
+\input{sections/sec01_intro}
+\input{sections/sec02_assumptions}
+\input{sections/sec03_p1}
+\input{sections/sec04_p2}
+\input{sections/sec05_p3}
+\input{sections/sec06_p4}
+\input{sections/sec06b_formulas}
+\input{sections/sec07_validation}
+\input{sections/sec08_evaluation}
+\input{sections/sec09_refs_ai}
+\input{sections/sec10_appendix}
+
+\end{document}

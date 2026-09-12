@@ -1,0 +1,68 @@
+% UltraMath V12.2 — CUMCM 官方模板适配（多文件架构）
+% 基于 cumcmthesis.cls v2.6（官方 LaTeX 模板）
+\documentclass[withoutpreface,bwprint]{cumcmthesis}
+
+% ===== 仅加载类文件未包含的宏包 =====
+% cumcmthesis.cls 已加载：ctex, geometry, amsmath, amssymb, bm, graphicx, float,
+%   array, longtable, booktabs, tabularx, multirow, bigstrut, bigdelim,
+%   cprotect, listings, xcolor, url, subcaption, caption, enumitem, ulem,
+%   calc, tocloft, appendix, etoolbox, hyperref, cleveref, indentfirst
+
+\usepackage[framemethod=TikZ]{mdframed}   % 带标题的边框盒子
+\usepackage{tikz}                          % 流程图
+\usetikzlibrary{arrows.meta, positioning, calc}
+
+% ===== TikZ 流程图样式 =====
+\tikzset{
+  box/.style={rectangle, draw, minimum width=3.2cm, minimum height=0.9cm, align=center},
+  arrow/.style={thick, -{Stealth}}
+}
+
+% ===== CUMCM 官方元数据（Writer 写作时替换为实际值） =====
+\title{论文标题}
+\tihao{A}                    % 题号：A / B / C / D / E
+\baominghao{000000000000}    % 12 位报名号
+\schoolname{XX大学}          % 学校全称（不含院系）
+\membera{队员A}              % 队员 1
+\memberb{队员B}              % 队员 2
+\memberc{队员C}              % 队员 3
+\supervisor{指导教师}         % 指导教师
+\yearinput{2026}             % 年
+\monthinput{09}              % 月
+\dayinput{05}                % 日
+
+\begin{document}
+
+% ===== 封面（\maketitle 自动生成，withoutpreface 模式下仅显示标题） =====
+\maketitle
+
+% ===== 摘要（环境由本文档生成，内容由 0.摘要.tex 提供） =====
+% ⛔ 禁止 \tableofcontents（CUMCM 2019+ 规则明确要求无目录）
+% ⛔ 禁止 \newpage（章节自然接续）
+\begin{abstract}
+\input{0.摘要.tex}
+\end{abstract}
+
+% ===== 正文各章节 =====
+\input{1.问题重述.tex}
+\input{2.问题分析.tex}
+\input{3.模型假设.tex}
+\input{4.符号说明.tex}
+\input{5.模型建立求解.tex}
+\input{6.核心公式汇总.tex}
+\input{7.可行性分析.tex}
+\input{8.模型检验.tex}
+\input{9.评价改进.tex}
+
+% ===== 参考文献（GB/T 7714-2015 格式，8-15 条） =====
+% ⛔ 禁止参考文献格式命令（严禁 \emph/\textbf/\textit，删除DOI号）
+\begin{thebibliography}{99}
+% \bibitem{1} 作者. 题名[J]. 刊名, 年, 卷(期): 起止页码.
+\end{thebibliography}
+
+% ===== 附录（页数不限，含完整可运行源码） =====
+\begin{appendices}
+\input{附录.tex}
+\end{appendices}
+
+\end{document}

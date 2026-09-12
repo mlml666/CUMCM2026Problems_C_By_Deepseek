@@ -1,0 +1,84 @@
+\section{核心公式汇总}
+\begingroup\small
+
+为便于评阅与复核，本节汇总全文的核心公式与判据（推导与编号见前文对应章节）。记时段 $t=1,\dots,T$（$T=144$，$\Delta t=1/6$ \si{h}），$L_t,P_t,p_t$ 分别为负载、光伏功率与电价，$g_t,a_t,b_t,s_t,E_t$ 分别为计划购电量、电池侧充放电量、弃光电量与时段末储电量。
+
+\textbf{（1）物理约束（\S2.3）}
+
+\begin{equation}
+  g_t+\eta_db_t+P_t\Delta t=L_t\Delta t+\frac{a_t}{\eta_c}+s_t,\qquad
+  E_t=E_{t-1}+a_t-b_t,
+  \label{eq:sum-balance}
+\end{equation}
+
+\begin{equation}
+  0\le a_t,b_t\le\bar A=P_b\Delta t=833.33,\quad g_t,s_t\ge0,\quad
+  1200\le E_t\le10800,\quad E_0=E_{144}=6000 .
+  \label{eq:sum-bounds}
+\end{equation}
+
+\textbf{（2）全天购电量分解式（\S2.4）}：对 \cref{eq:sum-balance} 全天求和，由 $E_{144}=E_0$ 得 $\sum_ta_t=\sum_tb_t\triangleq A$，故
+
+\begin{equation}
+  \sum_{t=1}^{T}g_t=\underbrace{\sum_{t=1}^{T}(L_t-P_t)\Delta t}_{\text{净缺口}}+\sum_{t=1}^{T}s_t+\frac{19}{90}A,\qquad A=\sum_t a_t\ (\text{电池侧吞吐量}).
+  \label{eq:sum-identity}
+\end{equation}
+
+\textbf{（3）储能最优策略与套利门槛（\S2.4、\S3.2）}：储电量影子价格 $\lambda$ 给出阈值策略
+
+\begin{equation}
+  \text{充电当 }p_t<0.9\lambda,\qquad \text{放电当 }p_t>1.111\lambda,\qquad
+  \text{套利门槛价比 }\frac{p_{\text{放}}}{p_{\text{充}}}>\frac{1}{\eta_c\eta_d}=1.235 .
+  \label{eq:sum-threshold}
+\end{equation}
+
+\textbf{（4）问题2 的两阶段模型与安全裕度（\S4.1、\S4.3、\S4.4）}
+
+\begin{equation}
+  \min\ \mathbb{E}\Big[\sum_tp_tg_t+\sum_t5p_t\,e_t\Big],\qquad
+  e_t=\big(L_t\Delta t-g_t-\eta_db_t-P_t\Delta t\big)^{+},
+  \label{eq:sum-p2cost}
+\end{equation}
+
+\begin{equation}
+  \tilde L_t=(1+\alpha)\hat L_t,\quad \tilde P_t=(1-\beta)\hat P_t,\qquad
+  q^\star=F_D^{-1}\!\left(\frac{c_u}{c_u+c_o}\right),\quad
+  c_u=4p_t,\ c_o\in[0.19p_t,\,p_t]\ \Rightarrow\ q^\star\in[0.80,0.96].
+  \label{eq:sum-margin}
+\end{equation}
+
+\textbf{（5）问题3 的费用函数与最优计划分位点（\S5.1、\S5.3）}：三档价格等价于对称罚金
+
+\begin{equation}
+  \Phi_t(\tilde g_t;\hat g_t)=p_t\tilde g_t+0.5\,p_t\big|\tilde g_t-\hat g_t\big|,
+  \label{eq:sum-penalty}
+\end{equation}
+
+\begin{equation}
+  \min_q\ \mathbb{E}\big[pD+0.5p|D-q|\big]=p\,\mathbb{E}[D]+0.5p\,\mathrm{MAD}(D)
+  \ \Longrightarrow\ q^\star=\mathrm{median}(D),
+  \label{eq:sum-median}
+\end{equation}
+
+\begin{equation}
+  V_\tau=0.5\,p\big[\mathrm{MAD}(D^{\tau-})-\mathrm{MAD}(D^{\tau})\big]+\Delta\{\text{紧急购电费}\}.
+  \label{eq:sum-value}
+\end{equation}
+
+\textbf{（6）问题4 的结算、鲁棒上界与分位点上移（\S6.2、\S6.3）}
+
+\begin{equation}
+  F_{4\text{-}3}=\sum_tp_t^{\text{act}}\tilde g_t+0.5\sum_tp_t^{\text{act}}\big|\tilde g_t-\hat g_t\big|
+  +\sum_t5p_t^{\text{act}}e_t,\qquad
+  \max_{p\in\mathcal U}F_{4\text{-}3}=F_{4\text{-}3}\big|_{p_t=p^{U}_t},
+  \label{eq:sum-p4}
+\end{equation}
+
+\begin{equation}
+  \mathbb{E}[P\mid D]\ \text{随}\ D\ \text{递增}\ \Longrightarrow\
+  \int_{D>q}w\,\mathrm{d}F=\int_{D<q}w\,\mathrm{d}F\ \Longrightarrow\ q^\star>\mathrm{median}(D).
+  \label{eq:sum-qstar}
+\end{equation}
+
+\textbf{（7）参数标定结果（\S4.3、\S5.5、\S6.4）}：问题2 取 $\alpha=0.15,\beta=0$；问题3 取 $\alpha=0.05$；问题4-2 取 $\alpha=0.05,\beta=0$；问题4-3 取 $\alpha=0.10$。全部标定均在 1 月数据上以"计划购电费 $+$ 紧急购电费（问题4 按实际电价）"最小为准则。
+\endgroup

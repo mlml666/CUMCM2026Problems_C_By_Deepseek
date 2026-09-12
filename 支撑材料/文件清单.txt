@@ -1,0 +1,10 @@
+﻿支撑材料文件清单（2026 高教社杯 C 题）
+【电子版论文（单独提交）：论文.pdf（85 页，第 1 页为摘要专用页，不含承诺书与编号页）】
+【打印版论文（纸质装订用）：论文_打印版.pdf（87 页 = 承诺书 1 页 + 编号专用页 1 页 + 论文主体）】
+
+1. AI工具使用详情.pdf —— 按《人工智能工具使用规定（2026年试行）》第四条编写（工具与版本、使用目的与环节、4 个典型交互示例、人工采纳/核验/纠错记录）
+2. src/ —— 全部可运行源程序（12 个 Python 文件，含 common.py 数据装载与 LP 引擎、solve_p1~p4.py 四问求解、verify_p25.py 独立验算、plots.py 绘图、sensitivity.py 补充灵敏度、explore_data.py 数据探索、compile_check.py 排版门禁）；均可就地运行
+3. 结果/ —— result1.xlsx、result2.xlsx、result3.xlsx、result4-2.xlsx、result4-3.xlsx（按附件5 模板填写）；28 个中间结果 CSV；《求解结果汇总.md》《phase25_验算报告.md》《phase25_验算明细.csv》；审稿阶段《review-checklist.md》《数值核对.csv》《恒等式口径复核.txt》
+4. 图片/ —— 论文全部插图（300 dpi，17 张，fig01–fig17）
+5. 论文源码/ —— 电子版与打印版 LaTeX 源码（论文.tex、论文_打印版.tex、preamble.tex、front/*.tex、sections/*.tex，含核心公式汇总节）与排版门禁脚本（编译后 PDF 单独提交）
+运行环境：Python 3.12.7（numpy 1.26.4、pandas 2.2.2、scipy 1.13.1、matplotlib 3.9、openpyxl 3.1）；XeLaTeX（TeX Live 2026）；随机种子固定为 42。

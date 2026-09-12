@@ -1,0 +1,66 @@
+\clearpage
+% 附录另起新页
+\appendix
+\ctexset{section={name={附录,}, number=\Alph{section}, format=\heiti\zihao{4}, aftername={}}}
+
+\section{支撑材料文件列表}
+
+按《全国大学生数学建模竞赛论文格式规范（2026 年修订稿）》\cite{cumcm2026format}的要求，支撑材料包含建模所用到的全部完整、可运行的源程序，以及结果文件与图表。压缩包 \verb|支撑材料.rar| 的文件列表如 \cref{tab:filelist} 所示；全部程序均在 Python 3.12.7（numpy 1.26.4、pandas 2.2.2、scipy 1.13.1、matplotlib 3.9、openpyxl 3.1）环境下运行通过，随机种子固定为 $42$。
+
+\begin{table}[H]
+  \centering
+  \caption{支撑材料文件列表}
+  \label{tab:filelist}
+  \small
+  \begin{tabular}{llc}
+    \toprule[1.5pt]
+    文件 & 说明 & 行数 \\
+    \midrule[1pt]
+    \verb|src/common.py|      & 数据装载、线性规划求解引擎、费用结算与结果文件写出 & 378 \\
+    \verb|src/solve_p1.py|    & 问题1 求解：确定性 LP、守恒核对与图表 & 118 \\
+    \verb|src/solve_p2.py|    & 问题2 求解：预测器评价、裕度标定、334 天滚动与结算 & 299 \\
+    \verb|src/solve_p3.py|    & 问题3 求解：预报映射、滚动调整与六策略对比 & 300 \\
+    \verb|src/solve_p4.py|    & 问题4 求解：电价预测、按实际电价重算问题2 与问题3 & 349 \\
+    \verb|src/verify_p25.py|  & 独立验算：独立 LP、独立 DP、独立结算复算与文件核对 & 391 \\
+    \verb|src/plots.py|       & 论文图表生成（300 dpi，17 张） & 384 \\
+    \verb|src/sensitivity.py| & 紧急费率与违约费率的补充灵敏度实验 & 66 \\
+    \verb|src/explore_data.py|& 附件数据探索与统计 & 188 \\
+    \midrule[1pt]
+    \verb|result1.xlsx| 等 5 个 & 按附件5 模板填写的完整购电策略结果文件 & --- \\
+    \verb|*.csv|（28 个）      & 表1/表2/表3、月度汇总、标定与对比等中间结果 & --- \\
+    \verb|*.png|（17 张）      & 论文全部插图（300 dpi） & --- \\
+    \verb|AI工具使用详情.pdf|  & 按《人工智能工具使用规定（2026 年试行）》第四条编写的使用详情 & --- \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+\clearpage
+% 附录 B（源程序代码）与附录 A 之间分页
+\section{源程序代码}
+
+\subsection*{B.1 \texttt{common.py}：数据装载、LP 引擎与结果写出}
+\lstinputlisting[language=Python]{src/common.py}
+
+\subsection*{B.2 \texttt{solve\_p1.py}：问题1 求解}
+\lstinputlisting[language=Python]{src/solve_p1.py}
+
+\subsection*{B.3 \texttt{solve\_p2.py}：问题2 求解}
+\lstinputlisting[language=Python]{src/solve_p2.py}
+
+\subsection*{B.4 \texttt{solve\_p3.py}：问题3 求解}
+\lstinputlisting[language=Python]{src/solve_p3.py}
+
+\subsection*{B.5 \texttt{solve\_p4.py}：问题4 求解}
+\lstinputlisting[language=Python]{src/solve_p4.py}
+
+\subsection*{B.6 \texttt{verify\_p25.py}：独立验算}
+\lstinputlisting[language=Python]{src/verify_p25.py}
+
+\subsection*{B.7 \texttt{plots.py}：图表生成}
+\lstinputlisting[language=Python]{src/plots.py}
+
+\subsection*{B.8 \texttt{sensitivity.py}：补充灵敏度实验}
+\lstinputlisting[language=Python]{src/sensitivity.py}
+
+\subsection*{B.9 \texttt{explore\_data.py}：数据探索}
+\lstinputlisting[language=Python]{src/explore_data.py}

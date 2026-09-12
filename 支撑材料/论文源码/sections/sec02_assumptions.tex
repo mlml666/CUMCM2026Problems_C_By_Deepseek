@@ -1,0 +1,121 @@
+\section{模型假设与符号说明}
+
+\subsection{模型假设}
+
+根据微网运行的物理规律与题目给定条件，本文作如下假设，并标注其强度：[强] 表示由题目或物理规律直接支持、全文统一采用；[弱] 表示存在合理歧义、本文明确取定并在检验部分作敏感性讨论。
+
+\textbf{[强] 假设}
+
+\begin{enumerate}[label=(\arabic*),leftmargin=2.2em,itemsep=2pt]
+  \item 时间离散化：以 $\Delta t=10/60=1/6$ \si{h} 为时段长度，全天划分为 $T=144$ 个时段；时段内电价、负载与光伏功率视为恒定，能量等于功率与 $\Delta t$ 之积。
+  \item 充放电效率各为 $0.9$，即充电时从母线取用的电能仅有 $90\%$ 存入电池，放电时电池需释放 $1/0.9$ 的电能才能向母线提供 $1$ \si{kWh}（往返效率 $81\%$）。
+  \item 储能最大容量 $12000$ \si{kWh}，最大充放电功率 $5000$ \si{kW}，为保证不过充过放，储量始终限制在 $[1200,10800]$ \si{kWh} 之间；功率上限按电池侧理解，即单时段电池侧充放电量不超过 $5000\Delta t=833.33$ \si{kWh}。
+  \item 2025-01-01 0:00 储电量为 $6000$ \si{kWh}；问题1 按题目要求取 $E_{144}=E_0$，问题2--4 取日周期边界 $E_{144}=E_0$（原因见 \S\ref{sec:boundary}）。
+  \item 允许弃光（光伏盈余无法入库时直接舍弃），不允许向电网售电，购电量非负；外网容量充足，不构成约束。
+  \item 储能在日内严格按计划充放电；若实际光伏低于预测，由此产生的负载缺额按紧急购电处理。
+\end{enumerate}
+
+\textbf{[弱] 假设}
+
+\begin{enumerate}[label=(\arabic*),leftmargin=2.2em,itemsep=2pt,start=7]
+  \item 附件2、附件4 的时间标签为区间结束时刻；结果模板的 144 行（列）与数据按时序一一对应填充，模板行 $a$--$b$ 对应数据标签 $b$。
+  \item 附件3 的"预报 $k$ 小时"为相对发布时刻的第 $k$ 小时；从整点预报到 10 分钟粒度采用分段常数插值（整点值代表其后 1 小时）。
+  \item 问题2 的 0:00 预测只使用该日之前的历史负载与光伏数据，不使用附件3 的预报；问题3、4 使用附件3 的预报作为光伏输入，负载仍由历史数据预测。
+  \item 问题3 的违约费以 0:00 计划为唯一基准一次结算；问题4 中计划购电、违约与紧急购电的费用一律按附件4 的实际电价结算，而决策阶段使用历史电价预测。
+\end{enumerate}
+
+\subsection{符号说明}
+
+\begin{table}[H]
+  \centering
+  \caption{主要符号与含义}
+  \label{tab:symbols}
+  \small
+  \begin{tabular}{clcl}
+    \toprule[1.5pt]
+    符号 & 含义 & 符号 & 含义 \\
+    \midrule[1pt]
+    $T,\Delta t$ & 时段数 $144$、时段长 $1/6$ \si{h} & $\eta_c,\eta_d$ & 充电、放电效率（$0.9$） \\
+    $L_t$ & 时段 $t$ 小区负载功率 (\si{kW}) & $P_t$ & 时段 $t$ 光伏功率 (\si{kW}) \\
+    $p_t$ & 时段 $t$ 外网电价 (元/kWh) & $g_t$ & 计划购电量 (\si{kWh}) \\
+    $a_t,b_t$ & 电池侧充电量、放电量 (\si{kWh}) & $s_t$ & 弃光电量 (\si{kWh}) \\
+    $E_t$ & 时段末储电量 (\si{kWh}) & $e_t$ & 紧急购电量 (\si{kWh}) \\
+    $\tilde{g}_t$ & 调整后购电量 (\si{kWh}) & $\hat{g}_t$ & 0:00 计划购电量 (\si{kWh}) \\
+    $n_t$ & 净缺口 $n_t=(L_t-P_t)\Delta t$ (\si{kWh}) & $A$ & 电池侧全天吞吐量 $\sum_t a_t$ (\si{kWh}) \\
+    $\bar A$ & 单时段电池侧最大充放电量 & $E_0$ & 日初储电量 (\si{kWh}) \\
+    $\alpha,\beta$ & 负载上浮、光伏下调的安全裕度 & $\lambda$ & 储电量影子价格 (元/kWh) \\
+    \bottomrule[1.5pt]
+  \end{tabular}
+\end{table}
+
+\subsection{共同物理模型}
+
+四问共用同一物理模型\cite{jiang2018}。设时段 $t=1,\dots,T$，时段 $t$ 表示区间 $((t-1)\Delta t,\;t\Delta t]$。
+
+\textbf{母线功率平衡}：购电量、光伏可用量与储能放电量之和等于负载与储能充电量之和，未被利用的光伏以弃光形式计入：
+
+\begin{equation}
+  g_t+\eta_d b_t+P_t\Delta t=L_t\Delta t+\frac{a_t}{\eta_c}+s_t,\qquad t=1,\dots,T,
+  \label{eq:balance}
+\end{equation}
+
+其中 $s_t\ge 0$。由 \cref{eq:balance} 与 $s_t\ge0$ 立即得到题目要求的"微网提供的电能不低于小区负载"：$g_t+\eta_d b_t+P_t\Delta t\ge L_t\Delta t$，故无需另设约束。
+
+\textbf{储能动态}：电池侧充放电量与储量的递推关系为
+
+\begin{equation}
+  E_t=E_{t-1}+a_t-b_t,\qquad t=1,\dots,T,
+  \label{eq:soc}
+\end{equation}
+
+效率已体现在 \cref{eq:balance} 中（充电量 $a_t$ 对应母线取用 $a_t/\eta_c$，放电量 $b_t$ 对应向母线提供 $\eta_d b_t$），因此 \cref{eq:soc} 不含效率系数，量纲为 \si{kWh}。
+
+\textbf{变量界与边界条件}：
+
+\begin{equation}
+  0\le a_t\le \bar A,\quad 0\le b_t\le \bar A,\quad g_t\ge0,\quad s_t\ge0,\quad
+  E_{\min}\le E_t\le E_{\max},
+  \label{eq:bounds}
+\end{equation}
+
+\begin{equation}
+  E_0=6000\ \text{kWh},\qquad E_T=E_0 \quad(\text{问题1 为题目要求，问题2--4 为日周期口径}),
+  \label{eq:terminal}
+\end{equation}
+
+其中 $E_{\min}=1200$、$E_{\max}=10800$ \si{kWh}，$\bar A=P_b\Delta t=833.33$ \si{kWh}。
+
+\textbf{量纲核对}：\cref{eq:balance} 中 $g_t,a_t/\eta_c,s_t$ 为 \si{kWh}，$P_t\Delta t$、$L_t\Delta t$ 为 $\si{kW}\times\si{h}=\si{kWh}$；\cref{eq:soc} 各项为 \si{kWh}；功率上限经 $\bar A=P_b\Delta t$ 换算为能量上限，量纲一致。目标函数中 $p_tg_t$ 的单位为元，效率因子 $\eta_c,\eta_d$ 无量纲。
+
+\subsection{共同模型的三条结构性质}
+
+这三条性质对四问均成立，是后文分析的基础。
+
+\textbf{性质1（充放电互斥，故模型保持线性规划）}：若某时段 $a_t>0$ 且 $b_t>0$，令 $a_t'=a_t-x$、$b_t'=b_t-y$ 并取 $x/\eta_c=\eta_d y$，则 \cref{eq:balance} 不变，而 $E_t$ 的变化量为
+
+\begin{equation}
+  -x+y=x\left(\frac{1}{\eta_c\eta_d}-1\right)>0,
+  \label{eq:mutex}
+\end{equation}
+
+即储电量严格增加、费用与可行性均不劣。故存在最优解满足 $a_tb_t=0$。这说明\textbf{无需引入 0-1 变量即可用连续线性规划精确求解}。
+
+\textbf{性质2（全天购电量分解式）}：对 \cref{eq:soc} 全天求和并利用 $E_T=E_0$ 得 $\sum_t a_t=\sum_t b_t\triangleq A$；代入 \cref{eq:balance} 全天求和得
+
+\begin{equation}
+  \sum_{t=1}^{T} g_t=\underbrace{\sum_{t=1}^{T}(L_t-P_t)\Delta t}_{\text{净缺口能量}}
+  +\sum_{t=1}^{T} s_t+\left(\frac{1}{\eta_c}-\eta_d\right)A
+  =\text{净缺口}+\text{弃光}+\frac{19}{90}A ,
+  \label{eq:identity}
+\end{equation}
+
+式中 $A=\sum_t a_t$ 为\textbf{电池侧}全天吞吐量，与母线侧充电量相差效率因子：$A=\eta_c\sum_t(a_t/\eta_c)$，系数 $\frac{1}{\eta_c}-\eta_d=\frac{19}{90}=0.2111\overline{1}$ 为精确值；等价地，损耗项也可写为 $(1-\eta_c\eta_d)\times$ 母线侧充电量 $=0.19\sum_t(a_t/\eta_c)$。该式表明：每在电池中搬运 $1$ \si{kWh}（电池侧），全天需多购 $19/90=0.2111$ \si{kWh}；换算为向负载多供 $1$ \si{kWh} 的代价是 $1/(\eta_c\eta_d)-1=23.46\%$。储能不能"创造"电量，其价值完全来自时段间的价格差搬运。\cref{eq:identity} 同时是后文数值结果的守恒校验依据。
+
+\textbf{性质3（阈值策略）}：设 \cref{eq:soc} 的对偶变量（储电量影子价格）为 $\lambda_t$（元/kWh）。当购电为边际供能方式时，KKT 条件\cite{dantzig1963}给出：储电量在上下限内部且既不充也不放的时段 $\lambda_t$ 保持不变；充电时段 $p_t=\eta_c\lambda$，放电时段 $p_t=\lambda/\eta_d$。因此存在阈值 $\lambda$，最优策略为
+
+\begin{equation}
+  \text{充电当 }p_t<0.9\lambda,\qquad \text{放电当 }p_t>1.111\lambda,\qquad \text{其余时段闲置},
+  \label{eq:threshold}
+\end{equation}
+
+充放之间的价格比门槛为 $1/(\eta_c\eta_d)=1.235$。$\lambda$ 由功率上限、储电量上下限与边界条件内生决定。式 \eqref{eq:threshold} 说明储能的最优行为是"按影子价格筛选取价格低于门槛的时段充电、高于门槛的时段放电"，是后文解释最优计划结构的理论依据。
